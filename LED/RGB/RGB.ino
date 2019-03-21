@@ -1,15 +1,15 @@
-#define BPIN 6
-#define RPIN 5
+#define RPIN 6
+#define BPIN 5
 #define GPIN 3
 int selectPin;
 int pinCounter;
 
 // Color arrays
 int black[3] =  {0, 0, 0};
-int white[3] =  {100, 100, 100};
-int red[3]   =  {100, 0, 0};
-int green[3] =  {0, 100, 0};
-int blue[3]  =  {0, 0, 100};
+int white[3] =  {255, 255, 255};
+int red[3]   =  {255, 0, 0};
+int green[3] =  {0, 255, 0};
+int blue[3]  =  {0, 0, 255};
 int yellow[3] = {40, 95, 0};
 int dimWhite[3] = {30, 30, 30};
 
@@ -23,9 +23,7 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  displayColor(red);
-  displayColor(white);
-  displayColor(blue);
+  displayColor(black);
 }
 
 void displayColor(int color[3]) {
