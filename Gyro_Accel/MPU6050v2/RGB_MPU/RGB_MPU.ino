@@ -15,25 +15,25 @@
 // AD0 low = 0x68 (default for SparkFun breakout and InvenSense evaluation board)
 // AD0 high = 0x69
 MPU6050 mpu;
-//MPU6050 mpu(0x69); // <-- use for AD0 high
-#define RPIN 6  // pin 6 for red
-#define BPIN 5  // pin 5 for blue
-#define GPIN 3  // pin 3 for green
+//MPU6050 mpu(0x69);  // <-- use for AD0 high
+#define RPIN 6        // pin 6 for red
+#define BPIN 5        // pin 5 for blue
+#define GPIN 3        // pin 3 for green
 
 int tickRate;
 int selectPin;
 int pinCounter;
 int accelCounter;
-int accelArray[3][10];  // latest 10 accel values in X, Y, Z
-bool prevNegative = false; // for testing purposes
-int temp = 0; // for testing purposes
+int accelArray[3][10];              // latest 10 accel values in X, Y, Z
+bool prevNegative = false;          // tracks whether previous value was negative
+int temp = 0;                       // for testing purposes
 int gyroCounter;
-int gyroArray[3][10];   // latest 10 gyro values in X, Y, Z
-int colorOutput[3] = {0, 0, 255}; // actual color output array in [R, G, B]
-
+int gyroArray[3][10];               // latest 10 gyro values in X, Y, Z
+int colorOutput[3] = {0, 0, 255};   // actual color output array in [R, G, B]
+ 
 #define OUTPUT_READABLE_YAWPITCHROLL
-#define INTERRUPT_PIN 2  // use pin 2 on Arduino Uno & most boards
-#define LED_PIN 13 // (Arduino is 13, Teensy is 11, Teensy++ is 6)
+#define INTERRUPT_PIN 2             // use pin 2 on Arduino Uno & most boards
+#define LED_PIN 13                  // (Arduino is 13, Teensy is 11, Teensy++ is 6)
 bool blinkState = false;
 
 // MPU control/status vars
@@ -186,25 +186,27 @@ void loop() {
         // (this lets us immediately read more without waiting for an interrupt)
         fifoCount -= packetSize;
 
-        // fade color every 25 packets
+        // fade color every 10 packets
         if (tickRate/10 >= 1) {
           displayColor(colorOutput, true);
         }
 
-        // only save results every 50 packets
+        // only save results every 20 packets
         if (tickRate/20 >= 1) {
+          /*
           // display Euler angles in degrees
           mpu.dmpGetQuaternion(&q, fifoBuffer);
           mpu.dmpGetEuler(euler, &q);
           int yaw = euler[0] * 180/M_PI;
           int pitch = euler[1] * 180/M_PI;
           int roll = euler[2] * 180/M_PI;
-          //Serial.print("euler\t");
-          //Serial.print(yaw);
-          //Serial.print("\t");
-          //Serial.print(pitch);
-          //Serial.print("\t");
-          //Serial.println(roll);
+          Serial.print("euler\t");
+          Serial.print(yaw);
+          Serial.print("\t");
+          Serial.print(pitch);
+          Serial.print("\t");
+          Serial.println(roll);
+          */
   
           // display real acceleration, adjusted to remove gravity
           mpu.dmpGetQuaternion(&q, fifoBuffer);
@@ -219,7 +221,10 @@ void loop() {
           Serial.println(aaReal.z);
   
           tickRate = 0;
-          
+
+          // Negative aaReal.z implies upwards acceleration? (lifting the foot)
+          // If the next aaReal.z is then positive, then the foot has moved back downwards supposedly
+          // Idle aaReal.z hovers around the range of ~1100
           if (aaReal.z < 0) {
             prevNegative = true;
             temp = aaReal.z;
@@ -229,13 +234,12 @@ void loop() {
           } else {
             prevNegative = false;
           }
-          
-          //setAccel(aaReal.x, aaReal.y, aaReal.z);
         }
         tickRate++;
     }
 }
 
+/* 
 // Stores accelerometer values in accelArray
 void setAccel(int aaX, int aaY, int aaZ) {
   accelArray[0][accelCounter] = aaX;
@@ -272,7 +276,6 @@ void checkMovementStep() {
   if (accelArray[2][accelCounter] < 0) {
     stepColor();
   }
-  /*
   for (int j = 0; j < 5; j++) {
     newAccelCounter = (accelCounter + 0) % 10;
     if (avgAccelY + threshold < accelArray[1][newAccelCounter] 
@@ -284,9 +287,9 @@ void checkMovementStep() {
       stepColor();
       break;
     }
-  } */
-  
+  }
 }
+*/
 
 // color that gets displayed upon detecting a step
 void stepColor() {
