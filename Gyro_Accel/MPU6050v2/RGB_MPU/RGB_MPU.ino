@@ -19,10 +19,18 @@ MPU6050 mpu;
 #define RPIN 6  // pin 6 for red
 #define BPIN 5  // pin 5 for blue
 #define GPIN 3  // pin 3 for green
+
 int tickRate;
 int selectPin;
 int pinCounter;
+int accelCounter;
+int accelArray[3][10];  // latest 10 accel values in X, Y, Z
+bool prevNegative = false; // for testing purposes
+int temp = 0; // for testing purposes
+int gyroCounter;
+int gyroArray[3][10];   // latest 10 gyro values in X, Y, Z
 int colorOutput[3] = {0, 0, 255}; // actual color output array in [R, G, B]
+
 #define OUTPUT_READABLE_YAWPITCHROLL
 #define INTERRUPT_PIN 2  // use pin 2 on Arduino Uno & most boards
 #define LED_PIN 13 // (Arduino is 13, Teensy is 11, Teensy++ is 6)
@@ -177,7 +185,6 @@ void loop() {
         // track FIFO count here in case there is > 1 packet available
         // (this lets us immediately read more without waiting for an interrupt)
         fifoCount -= packetSize;
-        Serial.println(tickRate);
 
         // fade color every 25 packets
         if (tickRate/10 >= 1) {
@@ -185,19 +192,19 @@ void loop() {
         }
 
         // only save results every 50 packets
-        if (tickRate/50 >= 1) {
+        if (tickRate/20 >= 1) {
           // display Euler angles in degrees
           mpu.dmpGetQuaternion(&q, fifoBuffer);
           mpu.dmpGetEuler(euler, &q);
           int yaw = euler[0] * 180/M_PI;
           int pitch = euler[1] * 180/M_PI;
           int roll = euler[2] * 180/M_PI;
-          Serial.print("euler\t");
-          Serial.print(yaw);
-          Serial.print("\t");
-          Serial.print(pitch);
-          Serial.print("\t");
-          Serial.println(roll);
+          //Serial.print("euler\t");
+          //Serial.print(yaw);
+          //Serial.print("\t");
+          //Serial.print(pitch);
+          //Serial.print("\t");
+          //Serial.println(roll);
   
           // display real acceleration, adjusted to remove gravity
           mpu.dmpGetQuaternion(&q, fifoBuffer);
@@ -212,13 +219,72 @@ void loop() {
           Serial.println(aaReal.z);
   
           tickRate = 0;
-          stepColor();
+          
+          if (aaReal.z < 0) {
+            prevNegative = true;
+            temp = aaReal.z;
+          } else if (prevNegative && temp + 1000 < aaReal.z) {
+            stepColor();
+            prevNegative = false;
+          } else {
+            prevNegative = false;
+          }
+          
+          //setAccel(aaReal.x, aaReal.y, aaReal.z);
         }
         tickRate++;
     }
 }
 
+// Stores accelerometer values in accelArray
 void setAccel(int aaX, int aaY, int aaZ) {
+  accelArray[0][accelCounter] = aaX;
+  accelArray[1][accelCounter] = aaY;
+  accelArray[2][accelCounter] = aaZ;
+
+  accelCounter++;
+  accelCounter = accelCounter % 10;
+
+  checkMovementStep();
+}
+
+// Determine whether a step was taken based on the accelArray values
+void checkMovementStep() {
+  // the averages should presumably be stable as it was idle beforehand
+  // next up there should be 3 value spiked due to the step whose values are compared
+  // to the averages in order to detect them
+  // and finally the last value shows that the step is completed
+  int avgAccelY = 0;  // average of the 10th - 5th last accelY value
+  int avgAccelZ = 0;  // average of the 10th - 5th last accelZ value
+  int newAccelCounter;
+  int threshold = 2000;
+  Serial.print("aaRealZ\t");
+  for (int i = 0; i < 5; i++) {
+    // We continue with accelCounter as latest index update
+    newAccelCounter = (accelCounter + i) % 10;  // next index should be oldest value in the array
+    avgAccelY += accelArray[1][newAccelCounter];
+    avgAccelZ += accelArray[2][newAccelCounter];
+    Serial.println(accelArray[2][newAccelCounter]);
+  }
+  avgAccelY = (avgAccelY/5);
+  avgAccelZ = (avgAccelZ/5);
+
+  if (accelArray[2][accelCounter] < 0) {
+    stepColor();
+  }
+  /*
+  for (int j = 0; j < 5; j++) {
+    newAccelCounter = (accelCounter + 0) % 10;
+    if (avgAccelY + threshold < accelArray[1][newAccelCounter] 
+        || avgAccelY - threshold > accelArray[1][newAccelCounter]
+        || avgAccelZ + threshold < accelArray[2][newAccelCounter] 
+        || avgAccelZ - threshold > accelArray[2][newAccelCounter]) {
+          Serial.print("avgAccelZ\t");
+          Serial.println(avgAccelZ);
+      stepColor();
+      break;
+    }
+  } */
   
 }
 
@@ -237,9 +303,9 @@ void displayColor(int color[3], bool fade) {
       analogWrite(selectPin, color[i]);
     } else {
       analogWrite(selectPin, color[i]);
-      Serial.print(selectPin);
-      Serial.print(" is set to value: ");
-      Serial.println(color[i]);
+      //Serial.print(selectPin);
+      //Serial.print(" is set to value: ");
+      //Serial.println(color[i]);
     }
   }
 }
