@@ -234,6 +234,15 @@ void loop() {
           } else {
             prevNegative = false;
           }
+
+          // Detects whether the user is walking or running with the aaReal.y
+          // by comparing current value +- threshold with idle value
+          // Idle aaReal.y hovers around the range of ~400
+          if (aaReal.y + 6000 < 400 || aaReal.y - 6000 > 400) {
+            runningColor();
+          } else if (aaReal.y + 1000 < 400 || aaReal.y - 1000 > 400) {
+            walkingColor();
+          } 
         }
         tickRate++;
     }
@@ -294,6 +303,18 @@ void checkMovementStep() {
 // color that gets displayed upon detecting a step
 void stepColor() {
   colorOutput[2] = 255;
+  displayColor(colorOutput, false);
+}
+
+// color values are currently for testing
+void walkingColor() {
+  colorOutput[1] = 255;
+  displayColor(colorOutput, false);
+}
+
+// color values are currently for testing
+void runningColor() {
+  colorOutput[0] = 255;
   displayColor(colorOutput, false);
 }
 
