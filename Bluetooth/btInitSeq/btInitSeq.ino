@@ -27,6 +27,8 @@ int accelCounter;
 bool prevNegative = false;          // tracks whether previous value was negative
 int temp = 0;                       // for testing purposes
 int colorOutput[3] = {0, 0, 255};   // actual color output array in [R, G, B]
+int counter;
+int tickTotal;
  
 #define OUTPUT_READABLE_YAWPITCHROLL
 #define INTERRUPT_PIN 2             // use pin 2 on Arduino Uno & most boards
@@ -183,7 +185,7 @@ void loop() {
         }
 
         // only save results every 20 packets
-        if (tickRate/20 >= 1) { 
+        if (tickRate/50 >= 1 && counter < 1) { 
           // display real acceleration, adjusted to remove gravity
           mpu.dmpGetQuaternion(&q, fifoBuffer);
           mpu.dmpGetAccel(&aa, fifoBuffer);
@@ -198,27 +200,8 @@ void loop() {
   
           tickRate = 0;
 
-          // Negative aaReal.z implies upwards acceleration? (lifting the foot)
-          // If the next aaReal.z is then positive, then the foot has moved back downwards supposedly
-          // Idle aaReal.z hovers around the range of ~1100
-          if (aaReal.z < 0) {
-            prevNegative = true;
-            temp = aaReal.z;
-          } else if (prevNegative && temp + 1000 < aaReal.z) {
-            stepColor();
-            prevNegative = false;
-          } else {
-            prevNegative = false;
-          }
-
-          // Detects whether the user is walking or running with the aaReal.y
-          // by comparing current value +- threshold with idle value
-          // Idle aaReal.y hovers around the range of ~400
-          if (aaReal.y + 6000 < 400 || aaReal.y - 6000 > 400) {
-            runningColor();
-          } else if (aaReal.y + 1000 < 400 || aaReal.y - 1000 > 400) {
-            walkingColor();
-          } 
+          stepColor();
+          counter++;
         }
         tickRate++;
     }

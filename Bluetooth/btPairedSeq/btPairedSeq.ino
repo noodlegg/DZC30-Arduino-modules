@@ -27,6 +27,8 @@ int accelCounter;
 bool prevNegative = false;          // tracks whether previous value was negative
 int temp = 0;                       // for testing purposes
 int colorOutput[3] = {0, 0, 255};   // actual color output array in [R, G, B]
+int seq = 0;
+int seq2 = 0;
  
 #define OUTPUT_READABLE_YAWPITCHROLL
 #define INTERRUPT_PIN 2             // use pin 2 on Arduino Uno & most boards
@@ -178,7 +180,7 @@ void loop() {
         fifoCount -= packetSize;
 
         // fade color every 10 packets
-        if (tickRate/10 >= 1) {
+        if (tickRate/10 >= 1 && seq2 < 5) {
           displayColor(colorOutput, true);
         }
 
@@ -206,19 +208,27 @@ void loop() {
             temp = aaReal.z;
           } else if (prevNegative && temp + 1000 < aaReal.z) {
             stepColor();
+            seq2++;
             prevNegative = false;
           } else {
             prevNegative = false;
           }
-
-          // Detects whether the user is walking or running with the aaReal.y
-          // by comparing current value +- threshold with idle value
-          // Idle aaReal.y hovers around the range of ~400
-          if (aaReal.y + 6000 < 400 || aaReal.y - 6000 > 400) {
-            runningColor();
-          } else if (aaReal.y + 1000 < 400 || aaReal.y - 1000 > 400) {
+          if (seq < 5) {
             walkingColor();
-          } 
+          } else if (seq < 10) {
+            walkingColor2();
+          } else if (seq < 15) {
+            walkingColor3();
+          } else if (seq < 20) {
+            walkingColor4();
+          } else {
+            if (seq2 < 5) { // take 3 steps and then double tap
+              walkingColor5();
+            } else {
+              whiteColor();
+            }
+          }
+          seq++;
         }
         tickRate++;
     }
@@ -232,9 +242,35 @@ void stepColor() {
 
 // color values are currently for testing
 void walkingColor() {
-  colorOutput[1] = random(50, 90);
+  colorOutput[1] = random(40, 80);
   colorOutput[0] = colorOutput[1] - random(10, 30);
   displayColor(colorOutput, true);
+}
+void walkingColor2() {
+  colorOutput[1] = random(90, 120);
+  colorOutput[0] = colorOutput[1] - random(10, 30);
+  displayColor(colorOutput, true);
+}
+void walkingColor3() {
+  colorOutput[1] = random(120, 150);
+  colorOutput[0] = colorOutput[1] - random(10, 30);
+  displayColor(colorOutput, true);
+}
+void walkingColor4() {
+  colorOutput[1] = random(150, 200);
+  colorOutput[0] = colorOutput[1] - random(10, 30);
+  displayColor(colorOutput, true);
+}
+void walkingColor5() {
+  colorOutput[1] = random(240, 255);
+  colorOutput[0] = colorOutput[1] - random(10, 30);
+  displayColor(colorOutput, true);
+}
+void whiteColor() {
+  colorOutput[0] = 255;
+  colorOutput[1] = 255;
+  colorOutput[2] = 255;
+  displayColor(colorOutput, false);
 }
 
 // color values are currently for testing

@@ -215,7 +215,7 @@ void loop() {
           // by comparing current value +- threshold with idle value
           // Idle aaReal.y hovers around the range of ~400
           if (aaReal.y + 6000 < 400 || aaReal.y - 6000 > 400) {
-            runningColor();
+            //runningColor();
           } else if (aaReal.y + 1000 < 400 || aaReal.y - 1000 > 400) {
             walkingColor();
           } 
@@ -226,14 +226,14 @@ void loop() {
 
 // color that gets displayed upon detecting a step
 void stepColor() {
-  colorOutput[2] = 255;
+  colorOutput[1] = 255;
   displayColor(colorOutput, false);
 }
 
 // color values are currently for testing
 void walkingColor() {
-  colorOutput[1] = random(50, 90);
-  colorOutput[0] = colorOutput[1] - random(10, 30);
+  colorOutput[0] = random(200, 250);
+  colorOutput[2] = colorOutput[0] - random(10, 30);
   displayColor(colorOutput, true);
 }
 
@@ -250,7 +250,7 @@ void displayColor(int color[3], bool fade) {
     pinCounter++;
     if (fade) {
       color[i] = color[i] - random(2, 5);
-      color[2] -= 5;  // to make blue fade faster
+      color[1] -= 5;  // to make blue fade faster
       if (color[i] < 0) {
         color[i] = 0;
       }
